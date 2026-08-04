@@ -1,0 +1,117 @@
+name: Seal Build
+
+# Builds and tests @opentelemetry/core@1.10.1 (packages/opentelemetry-core) and
+# packs the release tarball as core-1.10.1.tgz.
+#
+# Node matrix note: the requested matrix was 19, 8, 10, 12, 14, 16, 18, but only
+# the feasible subset 19, 14, 16, 18 is implemented here. Node 8, 10 and 12 are
+# omitted because they are below this package's `engines.node >= 14` and below
+# the floor of its dev dependencies (mocha@10, ts-mocha@10 and sinon@15 all
+# require Node >= 14), so the test suite cannot run on them at all.
+
+on: [push, workflow_dispatch]
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node_version: ["19", "14", "16", "18"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+
+      - name: Pin npm below 10 on legacy Node
+        # Node 14/16 ship npm 6/8; npm 6 has no `npm pkg` and lacks npm-7
+        # `--ignore-scripts` semantics. npm@latest would EBADENGINE here.
+        if: matrix.node_version == '14' || matrix.node_version == '16'
+        run: npm install -g npm@"<10.0.0"
+
+      - name: Bootstrap
+        shell: bash
+        run: |
+          set -e
+          npm install --ignore-scripts
+          npx lerna bootstrap --scope @opentelemetry/core --include-dependencies --hoist --nohoist='zone.js'
+
+      - name: Compile
+        shell: bash
+        # `npm run version` must run explicitly: it generates the uncommitted
+        # src/version.ts that tsc needs. `--ignore-scripts` keeps the package
+        # `precompile` (lerna run version ...) from firing.
+        run: |
+          set -e
+          for d in api packages/opentelemetry-semantic-conventions packages/opentelemetry-core; do
+            (cd "$d" && npm run version && npm run compile --ignore-scripts)
+          done
+
+      - name: Unit tests
+        shell: bash
+        run: |
+          set -e
+          cd packages/opentelemetry-core
+          npm test
+
+      - name: Pack tarball
+        if: matrix.node_version == '19'
+        shell: bash
+        run: |
+          set -e
+          mkdir -p dist-artifacts
+          cd packages/opentelemetry-core
+          npm pack --ignore-scripts --pack-destination=../../dist-artifacts
+          cd ../..
+          mv dist-artifacts/opentelemetry-core-1.10.1.tgz dist-artifacts/core-1.10.1.tgz
+          ls -l dist-artifacts
+
+      - name: Upload tarball
+        if: matrix.node_version == '19'
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-1.10.1-tgz
+          path: dist-artifacts/core-1.10.1.tgz
+          if-no-files-found: error
+
+  node-windows-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 19
+        uses: actions/setup-node@v4
+        with:
+          node-version: "19"
+
+      - name: Bootstrap
+        shell: bash
+        run: |
+          set -e
+          npm install --ignore-scripts
+          npx lerna bootstrap --scope @opentelemetry/core --include-dependencies --hoist --nohoist='zone.js'
+
+      - name: Use git bash as npm script-shell
+        # LOAD BEARING: the core `test` script's test/**/*.test.ts glob and its
+        # single-quoted --exclude argument are not understood by cmd.exe.
+        run: npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"
+
+      - name: Compile
+        shell: bash
+        run: |
+          set -e
+          for d in api packages/opentelemetry-semantic-conventions packages/opentelemetry-core; do
+            (cd "$d" && npm run version && npm run compile --ignore-scripts)
+          done
+
+      - name: Unit tests
+        shell: bash
+        run: |
+          set -e
+          cd packages/opentelemetry-core
+          npm test
