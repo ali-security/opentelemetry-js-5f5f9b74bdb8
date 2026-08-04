@@ -1,16 +1,14 @@
 name: W3C Trace Context Integration Test
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-  merge_group:
+  workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout 🛎️
         uses: actions/checkout@v3
 
@@ -52,3 +50,4 @@ jobs:
 
       - name: Run W3C Test harness
         run: ./integration-tests/tracecontext-integration-test.sh
+    timeout-minutes: 40

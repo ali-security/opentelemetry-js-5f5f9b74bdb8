@@ -1,13 +1,14 @@
 name: Deploy API Documentation
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -53,3 +54,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages # The branch the action should deploy to.
           FOLDER: docs # The folder the action should deploy.
+    timeout-minutes: 40

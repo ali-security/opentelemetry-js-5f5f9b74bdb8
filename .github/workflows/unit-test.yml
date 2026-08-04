@@ -1,10 +1,6 @@
 name: Unit Tests
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-  merge_group:
+  workflow_dispatch:
 
 jobs:
   node-tests:
@@ -12,13 +8,15 @@ jobs:
       fail-fast: false
       matrix:
         node_version:
-          - "14"
-          - "16"
-          - "18"
+          - '14'
+          - '16'
+          - '18'
     runs-on: ubuntu-latest
     env:
       NPM_CONFIG_UNSAFE_PERM: true
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -60,11 +58,14 @@ jobs:
       - name: Report Coverage
         run: npm run codecov
         if: ${{ matrix.node_version == '14' }}
+    timeout-minutes: 40
   node-windows-tests:
     runs-on: windows-latest
     env:
       NPM_CONFIG_UNSAFE_PERM: true
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -99,11 +100,14 @@ jobs:
 
       - name: Unit tests
         run: npm run test
+    timeout-minutes: 40
   browser-tests:
     runs-on: ubuntu-latest
     env:
       NPM_CONFIG_UNSAFE_PERM: true
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -137,11 +141,14 @@ jobs:
         run: npm run test:browser
       - name: Report Coverage
         run: npm run codecov:browser
+    timeout-minutes: 40
   webworker-tests:
     runs-on: ubuntu-latest
     env:
       NPM_CONFIG_UNSAFE_PERM: true
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v3.0.2
       - uses: actions/setup-node@v3
@@ -174,16 +181,19 @@ jobs:
         run: npm run test:webworker
       - name: Report Coverage
         run: npm run codecov:webworker
+    timeout-minutes: 40
   api-eol-node-test:
     strategy:
       fail-fast: false
       matrix:
         node_version:
-          - "8"
-          - "10"
-          - "12"
+          - '8'
+          - '10'
+          - '12'
     runs-on: ubuntu-latest
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v3
 
@@ -202,3 +212,4 @@ jobs:
       - name: Test
         working-directory: ./api
         run: npm test
+    timeout-minutes: 40

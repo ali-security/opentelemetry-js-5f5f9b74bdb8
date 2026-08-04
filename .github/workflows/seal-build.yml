@@ -9,7 +9,8 @@ name: Seal Build
 # the floor of its dev dependencies (mocha@10, ts-mocha@10 and sinon@15 all
 # require Node >= 14), so the test suite cannot run on them at all.
 
-on: [push, workflow_dispatch]
+on:
+  workflow_dispatch:
 
 jobs:
   node-tests:
@@ -17,8 +18,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ["19", "14", "16", "18"]
+        node_version: ['19', '14', '16', '18']
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -78,16 +81,19 @@ jobs:
           path: dist-artifacts/core-1.10.1.tgz
           if-no-files-found: error
 
+    timeout-minutes: 40
   node-windows-tests:
     runs-on: windows-latest
     steps:
+      - name: Configure npm time machine registry
+        run: npm config set registry https://:2023-03-20T16%3A10%3A31.107000Z@time-machines-npm.sealsecurity.io/
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node 19
         uses: actions/setup-node@v4
         with:
-          node-version: "19"
+          node-version: '19'
 
       - name: Bootstrap
         shell: bash
@@ -115,3 +121,4 @@ jobs:
           set -e
           cd packages/opentelemetry-core
           npm test
+    timeout-minutes: 40
